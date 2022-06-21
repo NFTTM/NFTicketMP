@@ -1,2 +1,2 @@
 # NFTicketMP
-This is a project of NFT ticket market place.
+This is the backend for the NFT ticket market place project.
