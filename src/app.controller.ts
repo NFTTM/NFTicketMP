@@ -208,6 +208,7 @@ export class AppController {
   })
   @UseInterceptors(FileInterceptor('file'))
   uploadFile(@UploadedFile() file: Express.Multer.File) {
+    console.log(file);
     const fileData = new FileDataDto(
       file.originalname,
       file.mimetype,
@@ -300,6 +301,54 @@ export class AppController {
       return result;
     } catch (error) {
       throw new HttpException(error.message, 503);
+    }
+  }
+}
+
+
+@ApiTags('Event')
+@Controller()
+export class EventController {
+  constructor(private readonly appService: AppService) { }
+
+  @Get('')
+  @ApiOperation({
+    summary: 'Database contents',
+    description: 'Gets the Database contents of this server',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Database contents',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'The server is not configured correctly',
+    type: HttpException,
+  })
+  async getAllData() {
+    try {
+      const result = this.appService.getAll();
+      return result;
+    } catch (error) {
+      throw new HttpException(error.message, 503);
+    }
+  }
+
+  @Get('ipfs')
+  @ApiOperation({
+    summary: 'IPFS node connection',
+    description: 'Returns true if the IPFS Node configured is running',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'IPFS Node connection',
+    type: Boolean,
+  })
+  async ipfsOnline() {
+    try {
+      return this.appService.isIpfsNodeOnline();
+    } catch (error) {
+      return error;
     }
   }
 }

@@ -11,7 +11,7 @@ import { IPFSHTTPClient } from 'ipfs-http-client/types/src/types';
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat';
 import fetch from 'node-fetch';
 
-const DB_PATH = '../db/db.json';
+const DB_PATH = './db/db.json';
 
 @Injectable()
 export class AppService {
@@ -61,7 +61,7 @@ export class AppService {
   }
 
   getFileStream(filename: string) {
-    const fileStream = createReadStream(`../upload/${filename}`);
+    const fileStream = createReadStream(`./upload/${filename}`);
     return new StreamableFile(fileStream);
   }
 
@@ -76,7 +76,7 @@ export class AppService {
 
   async saveToIpfs(fileId: number) {
     const fileData: FileData = this.get(fileId);
-    const fileLocation = `../upload/${fileData.file.storageName}`;
+    const fileLocation = `./upload/${fileData.file.storageName}`;
     const fileBytes = fs.readFileSync(fileLocation);
     const ipfsData = await this.ipfsClient.add(fileBytes);
     this.db.push(`/${fileId}/ipfs`, ipfsData);
