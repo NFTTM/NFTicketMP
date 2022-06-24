@@ -6,35 +6,31 @@ export class TicketdataDto {
     description: 'Owner name of this ticket',
     examples: ['Celine Dion', 'Alice'],
   })
-  ownername: string;
+  name: string;
+  
   @ApiProperty({
     required: true,
-    description: 'Owner account address of this ticket',
-    example: '0xjdkfkgbdbdbdbnrenmeekoeokvmn',
+    description: 'Ticket ID',
+    examples: ['A1234', 'B2345'],
   })
-  account: string;
-  @ApiProperty({
-    required: true,
-    description: 'Price of this ticket',
-    example: '10',
-  })
-  price: number;
-  @ApiProperty({
-    required: true,
-    description: 'Seat location of this ticket',
-    example: 'A13',
-  })
-  seat: string;
+  id: string;
+
   @ApiProperty({
     required: true,
     description: 'Ticket type',
     examples: ['VIP', 'Class 1', 'Class 3'],
   })
-  type: 'VIP';
-  @ApiProperty({
-    required: true,
-    description: 'Status of this ticket',
-    example: ['Available', 'Used', 'Expired'],
-  })
-  status: string;
+  ticketType: string;
+  // @ApiProperty({
+  //   required: false,
+  //   description: 'Price of this ticket',
+  //   example: '10',
+  // })
+  // price: number;
+  // @ApiProperty({
+  //   required: false,
+  //   description: 'Seat location of this ticket',
+  //   example: 'A13',
+  // })
+  // seat: string;
 }
