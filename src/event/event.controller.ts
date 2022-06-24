@@ -72,7 +72,7 @@ export class EventController {
     return updatedObj;
   }
 
-  @Post('file/:id')
+  @Post('file/')
   @ApiOperation({
     summary: 'Register base image',
     description: 'Registers a base image for this event in the database',
@@ -99,15 +99,14 @@ export class EventController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  uploadFile(@Param('id') id: number, @UploadedFile() file: Express.Multer.File) {
-    console.log(file);
+  uploadFile(@UploadedFile() file: Express.Multer.File) {
     const fileData = new FileDataDto(
       file.originalname,
       file.mimetype,
       file.filename,
       file.size,
     );
-    const savedObj = this.eventService.pushFile(id, fileData);
+    const savedObj = this.eventService.pushFile(fileData);
     return savedObj;
   }
 }

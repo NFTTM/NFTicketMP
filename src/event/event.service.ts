@@ -30,8 +30,8 @@ export class EventService {
     });
     const data = this.db.getData('/');
     this.lastEventId =
-      data && Object.keys(data).length > 0
-        ? Math.max(...Object.keys(data).map((key) => Number(key)))
+      data.event && Object.keys(data.event).length > 0
+        ? Math.max(...Object.keys(data.event).map((key) => Number(key)))
         : -1;
   }
 
@@ -40,26 +40,29 @@ export class EventService {
   }
 
   setEventData(eventData: EventdataDto) {
-    const obj = new EventData(eventData);
-    const eventId = ++this.lastEventId;
-    this.db.push(`/${eventId}/event/`, obj);
-    return eventId;
+    if (this.lastEventId == -1) {
+      const obj = new EventData(eventData);
+      const eventId = ++this.lastEventId;
+      this.db.push(`/event/`, obj);
+      return eventId;
+    }
+    return false;
   }
 
-  pushFile(id: number, fileData: FileDataDto) {
+  pushFile(fileData: FileDataDto) {
     let eventData: any;
     try {
-      eventData = this.db.getData(`/${id}/event/eventdata`);
+      eventData = this.db.getData(`/event/eventdata`);
     } catch (error) {
       return { error };
     }
     if (!eventData) return false;
 
-    this.db.push(`/${id}/event/file`, fileData);
-    return this.getEvent(id);
+    this.db.push(`/event/file`, fileData);
+    return this.getEvent();
   }
 
-  getEvent(eventId: number) {
-    return this.db.getData(`/${eventId}/event/`);
+  getEvent() {
+    return this.db.getData(`/event/`);
   }
 }

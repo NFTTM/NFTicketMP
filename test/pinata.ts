@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from 'axios';
 import * as FormData from 'form-data';
 import * as fs from 'fs';
 
