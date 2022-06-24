@@ -18,6 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FileDataDto } from 'src/dtos/file-data.dto';
+import { TicketBuyCheckDto } from 'src/dtos/ticket-buy-check.dto';
 import { TicketdataDto } from 'src/dtos/ticket-data.dto';
 import { TicketService } from './ticket.service';
 
@@ -25,6 +26,50 @@ import { TicketService } from './ticket.service';
 @Controller('ticket')
 export class TicketController {
   constructor(private readonly ticketService: TicketService) { }
+
+  @Post('')
+  @ApiOperation({
+    summary: 'Check signature validity before minting a ticket token',
+    description:
+      'Requests the server to check the signature validity before minting a ticket token',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Signature check pass',
+    type: Number,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Missing signature',
+    type: HttpException,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Wrong signature',
+    type: HttpException,
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Invalid signature',
+    type: HttpException,
+  })
+  async checkBuyerSignature(@Body() ticketBuyCheckDto: TicketBuyCheckDto) {
+    const signature = ticketBuyCheckDto.signature;
+    if (!signature || signature.length == 0)
+      throw new HttpException('Missing signature', 401);
+    let signatureValid = false;
+    try {
+      signatureValid = this.ticketService.checkSignature(
+        ticketBuyCheckDto.address,
+        ticketBuyCheckDto.ticketInfo,
+        signature,
+      );
+    } catch (error) {
+      throw new HttpException("Invalid signature: " + error.message, 500);
+    }
+    if (!signatureValid) throw new HttpException('Signature does not match with the requested address', 403);
+    return signatureValid;
+  }
 
   @Get('/:eventId')
   @ApiOperation({

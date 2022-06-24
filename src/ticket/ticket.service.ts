@@ -3,6 +3,7 @@ import { JsonDB } from 'node-json-db';
 import { Config } from 'node-json-db/dist/lib/JsonDBConfig';
 import { IPFSHTTPClient } from 'ipfs-http-client/types/src/types';
 import { create } from 'ipfs-http-client';
+import { ethers } from 'ethers';
 import { TicketdataDto } from 'src/dtos/ticket-data.dto';
 import { TicketData } from 'src/schemas/ticket-data.interface'
 import { FileDataDto } from 'src/dtos/file-data.dto';
@@ -59,5 +60,12 @@ export class TicketService {
 
   getTicket(eventId: number, ticketId: number) {
     return this.db.getData(`/${eventId}/tickets/${ticketId}/`);
+  }
+
+  checkSignature(address: string, ticketInfo: string, signature: string) {
+    // const signatureObject = {address: address, amount: amount};
+    // const signatureMessage = JSON.stringify(signatureObject);
+    const signerAddress = ethers.utils.verifyMessage(ticketInfo, signature);
+    return signerAddress == address;
   }
 }
