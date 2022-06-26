@@ -12,6 +12,7 @@ import { SignerService } from 'src/shared/services/signer/signer.service';
 import * as watermark from 'jimp-watermark';
 import * as fs from 'fs';
 import * as TokenContract from 'src/assets/contracts/TokenContract.json';
+import { TicketCheckinDto } from 'src/dtos/ticket-checkin.dto';
 
 const DB_PATH = './db/db.json';
 const WATER_MARK_IMAGE = './upload/watermark.png';
@@ -134,5 +135,27 @@ export class TicketService {
     const ticketJsonURI = ticketJsonticketImageIpfsData.path;
     this.db.push(`/tickets/${ticketId}/jsonIpfs`, ticketJsonticketImageIpfsData);
     return ticketJsonURI;
+  }
+
+  async verifyCheckinSignature(ticketCheckinDto: TicketCheckinDto) {
+    const signatureObject = {
+      address: ticketCheckinDto.address,
+      requestCheckin: ticketCheckinDto.requestCheckin,
+    };
+    const signatureMessage = JSON.stringify(signatureObject);
+    const signerAddress = ethers.utils.verifyMessage(signatureMessage, ticketCheckinDto.signedHashForCheckin);
+    const signatureValid = signerAddress == ticketCheckinDto.address;
+    return signatureValid;
+  }
+  async checkin(ticketCheckinDto: TicketCheckinDto) {
+    // This function didn't know which ticket to checkin if an address holds multiple tickets.
+    // Now backend didn't check if this addres holds a ticket or ticket expired.
+    const attendeeAddress = ticketCheckinDto.address;
+    const attendeeCheckedIn = await this.contractSignedInstance.checkedIn(attendeeAddress);
+    if (attendeeCheckedIn) {
+      return false;
+    }
+    await this.contractSignedInstance.checkAttendeeIn(attendeeAddress);
+    return true;
   }
 }

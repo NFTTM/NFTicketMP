@@ -14,6 +14,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { TicketBuyCheckDto } from 'src/dtos/ticket-buy-check.dto';
+import { TicketCheckinDto } from 'src/dtos/ticket-checkin.dto';
 import { TicketService } from './ticket.service';
 
 @ApiTags('ticket')
@@ -25,7 +26,7 @@ export class TicketController {
   @ApiOperation({
     summary: 'Check signature validity before minting a ticket token',
     description:
-      'Requests the server to check the signature validity before minting a ticket token',
+      'Requests the server to check the signature validity before minting a ticket token. If pass, server generates an unique ticket image',
   })
   @ApiResponse({
     status: 201,
@@ -65,7 +66,7 @@ export class TicketController {
   @ApiOperation({
     summary: 'Request a ticket uri from IPFS to the provided ticketId',
     description:
-      '1. Checks the balance of this account to ensure it has none-zero ticket. 2. If pass, server generates an unique ticket image and uploads to IPFS. 3. Uploads {name, id, ticketType,  signedHash, imageURI} to IPFS and return the jsonURI to frontend.',
+      '1. Checks the balance of this account to ensure it has none-zero ticket. 2. If pass, server uploads to IPFS. 3. Uploads {name, id, ticketType,  signedHash, imageURI} to IPFS and return the jsonURI to frontend.',
   })
   @ApiResponse({
     status: 200,
@@ -110,22 +111,49 @@ export class TicketController {
     }
   }
 
-  // @Get('/')
-  // @ApiOperation({
-  //   summary: 'Register ticket metadata',
-  //   description: 'Registers detailed info for a ticket',
-  // })
-  // @ApiResponse({
-  //   status: 201,
-  //   description: 'Ticket registered',
-  // })
-  // @ApiResponse({
-  //   status: 503,
-  //   description: 'Server Error',
-  //   type: HttpException,
-  // })
-  // setTicketData(@Param('eventId') eventId: number, @Body() body: TicketdataDto) {
-  //   const updatedObj = this.ticketService.setTicketData(eventId, body);
-  //   return updatedObj;
-  // }
+  @Post('/check-in')
+  @ApiOperation({
+    summary: 'CHeckin a ticket',
+    description: 'Requests to checkin a ticket',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Ticket checked in',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Missing signature',
+    type: HttpException,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Wrong signature',
+    type: HttpException,
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Invalid signature',
+    type: HttpException,
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'The server is not configured correctly',
+    type: HttpException,
+  })
+  async checkin(@Body() ticketCheckinDto: TicketCheckinDto) {
+    const signature = ticketCheckinDto.signedHashForCheckin;
+    if (!signature || signature.length == 0)
+      throw new HttpException('Missing signature', 401);
+    let signatureValid = false;
+    try {
+      signatureValid = await this.ticketService.verifyCheckinSignature(ticketCheckinDto);
+    } catch (error) {
+      throw new HttpException("Invalid signature: " + error.message, 500);
+    }
+    if (!signatureValid) throw new HttpException('Signature does not match with the requested address', 403);
+    if (!signature || signature.length == 0)
+      throw new HttpException('Missing signature', 401);
+    const checkedIn = await this.ticketService.checkin(ticketCheckinDto);
+    return checkedIn;
+  }
 }
