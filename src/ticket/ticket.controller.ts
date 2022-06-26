@@ -48,6 +48,11 @@ export class TicketController {
     description: 'Invalid signature',
     type: HttpException,
   })
+  @ApiResponse({
+    status: 501,
+    description: 'Event has not been created',
+    type: HttpException,
+  })
   async checkBuyerSignature(@Body() ticketBuyCheckDto: TicketBuyCheckDto) {
     const signature = ticketBuyCheckDto.signature;
     if (!signature || signature.length == 0)
