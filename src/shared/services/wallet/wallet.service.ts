@@ -10,9 +10,9 @@ export class WalletService {
   }
 
   setupWallet() {
-    const seed = process.env.ADMIN_WALLET_SEED;
-    if (!seed || seed.length === 0) return;
-    this.wallet = ethers.Wallet.fromMnemonic(seed);
+    const priKey = process.env.PRIVATE_KEY;
+    if (!priKey || priKey.length === 0) return;
+    this.wallet = new ethers.Wallet(priKey);
   }
 
   walletAddress() {

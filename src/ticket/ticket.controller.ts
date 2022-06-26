@@ -5,11 +5,7 @@ import {
   HttpException,
   Param,
   Post,
-  UploadedFile,
-  UseInterceptors,
-  Response,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
   ApiConsumes,
@@ -17,9 +13,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { FileDataDto } from 'src/dtos/file-data.dto';
 import { TicketBuyCheckDto } from 'src/dtos/ticket-buy-check.dto';
-import { TicketdataDto } from 'src/dtos/ticket-data.dto';
 import { TicketService } from './ticket.service';
 
 @ApiTags('ticket')
@@ -116,7 +110,7 @@ export class TicketController {
     }
   }
 
-  // @Post('/:eventId/ticketdata')
+  // @Get('/')
   // @ApiOperation({
   //   summary: 'Register ticket metadata',
   //   description: 'Registers detailed info for a ticket',

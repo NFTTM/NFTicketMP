@@ -4,7 +4,6 @@ import { Config } from 'node-json-db/dist/lib/JsonDBConfig';
 import { IPFSHTTPClient } from 'ipfs-http-client/types/src/types';
 import { create } from 'ipfs-http-client';
 import { ethers } from 'ethers';
-import { TicketdataDto } from 'src/dtos/ticket-data.dto';
 import { TicketData } from 'src/schemas/ticket-data.interface'
 import { FileDataDto } from 'src/dtos/file-data.dto';
 import { TicketBuyCheckDto } from 'src/dtos/ticket-buy-check.dto';
@@ -12,7 +11,7 @@ import { ProviderService } from 'src/shared/services/provider/provider.service';
 import { SignerService } from 'src/shared/services/signer/signer.service';
 import * as watermark from 'jimp-watermark';
 import * as fs from 'fs';
-import * as TokenContract from 'src/assets/contracts/Token.json';
+import * as TokenContract from 'src/assets/contracts/TokenContract.json';
 
 const DB_PATH = './db/db.json';
 const WATER_MARK_IMAGE = './upload/watermark.png';
@@ -34,13 +33,16 @@ export class TicketService {
       port: 5001,
       protocol: 'http',
     });
-
     this.setupContractInstances();
   }
 
-  setupContractInstances() {
+  async setupContractInstances() {
     const contractAddress = process.env.TOKEN_CONTRACT_ADDRESS;
     if (!contractAddress || contractAddress.length === 0) return;
+
+    const balanceBN = await this.signerService.signer.getBalance();
+    const balance = Number(ethers.utils.formatEther(balanceBN));
+
     this.contractPublicInstance = new ethers.Contract(
       contractAddress,
       TokenContract.abi,
@@ -90,12 +92,13 @@ export class TicketService {
     const signatureValid = signerAddress == ticketBuyCheckDto.address;
     if (signatureValid) {
       this.storeTicketToJsonDb(ticketBuyCheckDto.id, ticketBuyCheckDto);
+      this.generateTicketImage(ticketBuyCheckDto.name, ticketBuyCheckDto.id, ticketBuyCheckDto.ticketType);
     }
     return signatureValid;
   }
 
   async tokenBalanceOf(address: string) {
-    const balanceBN = await this.contractPublicInstance.balanceOf(address);
+    const balanceBN = await this.contractSignedInstance.balanceOf(address);
     const balance: number = +ethers.utils.formatEther(balanceBN);
     return balance;
   }
@@ -117,11 +120,9 @@ export class TicketService {
 
   async getTicket(ticketId: string) {
     const ticketInfo: TicketBuyCheckDto = this.getTicketInfo(ticketId);
-    await this.generateTicketImage(ticketInfo.name, ticketInfo.id, ticketInfo.ticketType);
     const fileBytes = fs.readFileSync(WATER_MARK_IMAGE);
     const ticketImageIpfsData = await this.ipfsClient.add(fileBytes);
-    this.db.push(`/tickets/${ticketId}/ipfs`, ticketImageIpfsData);
-    console.log(ticketImageIpfsData);
+    this.db.push(`/tickets/${ticketId}/imageIpfs`, ticketImageIpfsData);
     const ticketJsonObj = {
       name: ticketInfo.name,
       id: ticketInfo.id,
@@ -129,9 +130,9 @@ export class TicketService {
       signedHash: ticketInfo.signature,
       imageUri: ticketImageIpfsData.path
     };
-    console.log(ticketJsonObj);
     const ticketJsonticketImageIpfsData = await this.ipfsClient.add(JSON.stringify(ticketJsonObj))
     const ticketJsonURI = ticketJsonticketImageIpfsData.path;
+    this.db.push(`/tickets/${ticketId}/jsonIpfs`, ticketJsonticketImageIpfsData);
     return ticketJsonURI;
   }
 }

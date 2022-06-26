@@ -7,7 +7,7 @@ export class EventdataDto {
   @ApiProperty({
     required: true,
     description: 'Name of this event',
-    examples: ['Celine Dion Concert', 'FIFA World Cup 2022', 'NBA'],
+    example: "Super Bowl 2023",
   })
   name: string;
   @ApiProperty({
@@ -43,7 +43,7 @@ export class EventdataDto {
   @ApiProperty({
     required: false,
     description: 'Descreption of the event',
-    example: 'This is the Celine Dion 2022 world tour concert "Courage".'
+    example: 'This is the super bowl 2023 Feb 12, State Farm Stadium.'
   })
   description?: string;
 }

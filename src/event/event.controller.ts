@@ -1,14 +1,14 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpException,
-    Param,
-    Post,
-    UploadedFile,
-    UseInterceptors,
-    Response,
-  } from '@nestjs/common';
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  Param,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  Response,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
@@ -21,8 +21,6 @@ import { Express } from 'express';
 import { Blob } from 'buffer';
 import { EventService } from './event.service';
 import { FileDataDto } from '../dtos/file-data.dto';
-import { SetMetadataDto } from '../dtos/set-metadata.dto';
-import { UploadIpfsDto } from '../dtos/upload-ipfs.dto';
 import { EventdataDto } from 'src/dtos/event-data.dto';
 
 @ApiTags('event')
@@ -108,5 +106,24 @@ export class EventController {
     );
     const savedObj = this.eventService.pushFile(fileData);
     return savedObj;
+  }
+
+  @Post('ipfs')
+  @ApiOperation({
+    summary: 'Upload the base image to ipfs',
+    description: 'Upload the base image of this image to ipfs',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Base image uploaded',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'Server Error',
+    type: HttpException,
+  })
+  saveBaseImageToIpfs() {
+    const ipfsPath = this.eventService.saveToIpfs();
+    return ipfsPath;
   }
 }

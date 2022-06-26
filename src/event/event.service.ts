@@ -1,17 +1,12 @@
-import { Injectable, StreamableFile } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { JsonDB } from 'node-json-db';
 import { Config } from 'node-json-db/dist/lib/JsonDBConfig';
 import { FileDataDto } from 'src/dtos/file-data.dto';
-import { MetadataDto } from 'src/dtos/metadata.dto';
 import { EventdataDto } from 'src/dtos/event-data.dto'
-import { FileData } from 'src/schemas/file-data.interface';
 import { create } from 'ipfs-http-client';
-import { createReadStream } from 'fs';
 import { IPFSHTTPClient } from 'ipfs-http-client/types/src/types';
-import { concat as uint8ArrayConcat } from 'uint8arrays/concat';
 import { EventData } from 'src/schemas/event-data.interface'
-import fetch from 'node-fetch';
 
 const DB_PATH = './db/db.json';
 
@@ -64,5 +59,14 @@ export class EventService {
 
   getEvent() {
     return this.db.getData(`/event/`);
+  }
+
+  async saveToIpfs() {
+    const eventData: EventData = this.getEvent();
+    const fileLocation = `./upload/${eventData.file.storageName}`;
+    const fileBytes = fs.readFileSync(fileLocation);
+    const eventIpfsData = await this.ipfsClient.add(fileBytes);
+    this.db.push(`/event/ipfs`, eventIpfsData);
+    return eventIpfsData.path;
   }
 }
