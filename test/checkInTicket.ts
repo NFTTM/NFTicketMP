@@ -29,7 +29,6 @@ async function main() {
   console.log(`Token balance of ${addressHasToken} is ${tokenBalance}`);
 
   const Message = { address: addressHasToken, requestCheckin: true };
-  console.log(Message);
   const signatureMessage = JSON.stringify(Message);
   const signedHash = await wallet.signMessage(signatureMessage);
   console.log(signedHash);

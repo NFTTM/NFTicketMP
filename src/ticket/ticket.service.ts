@@ -86,14 +86,13 @@ export class TicketService {
     return this.db.getData(`/tickets/${ticketId}/ticketdata/`);
   }
 
-  checkSignature(ticketBuyCheckDto: TicketBuyCheckDto) {
+  verifyBuySignature(ticketBuyCheckDto: TicketBuyCheckDto) {
     const signatureObject = { name: ticketBuyCheckDto.name, id: ticketBuyCheckDto.id, ticketType: ticketBuyCheckDto.ticketType };
     const signatureMessage = JSON.stringify(signatureObject);
     const signerAddress = ethers.utils.verifyMessage(signatureMessage, ticketBuyCheckDto.signature);
     const signatureValid = signerAddress == ticketBuyCheckDto.address;
     if (signatureValid) {
       this.storeTicketToJsonDb(ticketBuyCheckDto.id, ticketBuyCheckDto);
-      this.generateTicketImage(ticketBuyCheckDto.name, ticketBuyCheckDto.id, ticketBuyCheckDto.ticketType);
     }
     return signatureValid;
   }
@@ -105,18 +104,28 @@ export class TicketService {
   }
 
   getAddressById(id: string) {
-    const userAddress = this.db.getData(`/tickets/${id}/ticketdata/address`);
+    let userAddress;
+    try {
+      userAddress = this.db.getData(`/tickets/${id}/ticketdata/address`);
+    } catch (error) {
+      return false;
+    }
     return userAddress;
   }
   async generateTicketImage(name: string, id: string, ticketType: string) {
+    let storageName;
+    try {
+      storageName = this.db.getData('/event/file/storageName/')
+    } catch (error) {
+      throw error;
+    }
     var options = {
       'text': `${name} ${id} ${ticketType}`,
       'textSize': 6, //Should be between 1-8
       'dstPath': WATER_MARK_IMAGE
     };
-
-    const storageName = this.db.getData('/event/file/storageName/')
     watermark.addTextWatermark(`./upload/${storageName}`, options);
+    return true;
   }
 
   async getTicket(ticketId: string) {

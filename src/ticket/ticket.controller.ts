@@ -54,11 +54,20 @@ export class TicketController {
       throw new HttpException('Missing signature', 401);
     let signatureValid = false;
     try {
-      signatureValid = this.ticketService.checkSignature(ticketBuyCheckDto);
+      signatureValid = this.ticketService.verifyBuySignature(ticketBuyCheckDto);
     } catch (error) {
       throw new HttpException("Invalid signature: " + error.message, 500);
     }
     if (!signatureValid) throw new HttpException('Signature does not match with the requested address', 403);
+    try {
+      this.ticketService.generateTicketImage(
+        ticketBuyCheckDto.name,
+        ticketBuyCheckDto.id,
+        ticketBuyCheckDto.ticketType
+      )
+    } catch (error) {
+      throw new HttpException('Event not created.' + error.message, 501);
+    }
     return signatureValid;
   }
 
@@ -80,6 +89,9 @@ export class TicketController {
   })
   async getTicket(@Param('ticketId') ticketId: string) {
     const userAddress = this.ticketService.getAddressById(ticketId);
+    if (!userAddress) {
+      throw new HttpException('No ticket found', 401);
+    }
     const tokenBalance = await this.ticketService.tokenBalanceOf(userAddress);
     let ticketJsonURI;
     if (tokenBalance > 0) {
