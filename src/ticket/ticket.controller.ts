@@ -76,9 +76,9 @@ export class TicketController {
     return signatureValid;
   }
 
-  @Get('/:ticketId')
+  @Get('/:passportId')
   @ApiOperation({
-    summary: 'Request a ticket uri from IPFS to the provided ticketId',
+    summary: 'Request a ticket uri from IPFS to the provided passportId',
     description:
       '1. Checks the balance of this account to ensure it has none-zero ticket. 2. If pass, server uploads to IPFS. 3. Uploads {name, id, ticketType,  signedHash, imageURI} to IPFS and return the jsonURI to frontend.',
   })
@@ -88,19 +88,26 @@ export class TicketController {
     type: Number,
   })
   @ApiResponse({
+    status: 501,
+    description: 'The attendee has not bought ticket yet',
+    type: HttpException,
+  })
+  @ApiResponse({
     status: 503,
     description: 'The server is not configured correctly',
     type: HttpException,
   })
-  async getTicket(@Param('ticketId') ticketId: string) {
-    const userAddress = this.ticketService.getAddressById(ticketId);
+  async getTicket(@Param('passportId') passportId: string) {
+    const userAddress = this.ticketService.getAddressById(passportId);
     if (!userAddress) {
       throw new HttpException('No ticket found', 401);
     }
     const tokenBalance = await this.ticketService.tokenBalanceOf(userAddress);
     let ticketJsonURI;
     if (tokenBalance > 0) {
-      ticketJsonURI = await this.ticketService.getTicket(ticketId);
+      ticketJsonURI = await this.ticketService.getTicket(passportId);
+    } else {
+      throw new HttpException('Has not bought ticket yet', 501)
     }
     return ticketJsonURI;
   }
