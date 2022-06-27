@@ -1,36 +1,40 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export class TicketdataDto {
+export class TicketCheckDto {
+  @ApiProperty({
+    required: true,
+    description: 'Address that will receive the ticket token',
+    example: '0x6a9b60d873275458ea0c4590eBFcED09d9969F56',
+    minLength: 42,
+    maxLength: 42,
+  })
+  address: string;
+
   @ApiProperty({
     required: true,
     description: 'Owner name of this ticket',
-    examples: ['Celine Dion', 'Alice'],
+    example: 'alice',
   })
   name: string;
-  
+
   @ApiProperty({
     required: true,
     description: 'Ticket ID',
-    examples: ['A1234', 'B2345'],
+    example: 'A1234',
   })
   id: string;
 
   @ApiProperty({
     required: true,
     description: 'Ticket type',
-    examples: ['VIP', 'Class 1', 'Class 3'],
+    example: 'VIP1',
   })
   ticketType: string;
-  // @ApiProperty({
-  //   required: false,
-  //   description: 'Price of this ticket',
-  //   example: '10',
-  // })
-  // price: number;
-  // @ApiProperty({
-  //   required: false,
-  //   description: 'Seat location of this ticket',
-  //   example: 'A13',
-  // })
-  // seat: string;
+
+  @ApiProperty({
+    required: true,
+    description: 'Signature payload for buying ticket',
+    example: '0x3603b348361238aa5adf8a3c16622caa9cb4962c2583bb484d29253c6e8d594f72029f8765c76eac95dbd6d476af871c37aef119ccf1ac094bfd1e49c4de719c1c',
+  })
+  buySignature: string;
 }

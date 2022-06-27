@@ -13,7 +13,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { TicketBuyCheckDto } from 'src/dtos/ticket-buy-check.dto';
+import { TicketCheckDto } from 'src/dtos/ticket-data.dto';
 import { TicketCheckinDto } from 'src/dtos/ticket-checkin.dto';
 import { TicketService } from './ticket.service';
 
@@ -53,22 +53,22 @@ export class TicketController {
     description: 'Event has not been created',
     type: HttpException,
   })
-  async checkBuyerSignature(@Body() ticketBuyCheckDto: TicketBuyCheckDto) {
-    const signature = ticketBuyCheckDto.signature;
+  async checkBuyerSignature(@Body() ticketCheckDto: TicketCheckDto) {
+    const signature = ticketCheckDto.buySignature;
     if (!signature || signature.length == 0)
       throw new HttpException('Missing signature', 401);
     let signatureValid = false;
     try {
-      signatureValid = this.ticketService.verifyBuySignature(ticketBuyCheckDto);
+      signatureValid = this.ticketService.verifyBuySignature(ticketCheckDto);
     } catch (error) {
       throw new HttpException("Invalid signature: " + error.message, 500);
     }
     if (!signatureValid) throw new HttpException('Signature does not match with the requested address', 403);
     try {
       this.ticketService.generateTicketImage(
-        ticketBuyCheckDto.name,
-        ticketBuyCheckDto.id,
-        ticketBuyCheckDto.ticketType
+        ticketCheckDto.name,
+        ticketCheckDto.id,
+        ticketCheckDto.ticketType
       )
     } catch (error) {
       throw new HttpException('Event not created.' + error.message, 501);
@@ -130,7 +130,7 @@ export class TicketController {
 
   @Post('/check-in')
   @ApiOperation({
-    summary: 'CHeckin a ticket',
+    summary: 'Checkin a ticket',
     description: 'Requests to checkin a ticket',
   })
   @ApiResponse({

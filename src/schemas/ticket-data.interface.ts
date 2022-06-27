@@ -1,9 +1,9 @@
 import { IpfsDataDto } from '../dtos/ipfs-data.dto'
-import { TicketBuyCheckDto } from 'src/dtos/ticket-buy-check.dto';
+import { TicketCheckDto } from 'src/dtos/ticket-data.dto';
 
 export class TicketData {
   constructor(
-    public ticketdata?: TicketBuyCheckDto,
+    public ticketdata?: TicketCheckDto,
     public imageIpfs?: IpfsDataDto,
     public jsonIpfs?: IpfsDataDto,
   ) { }
