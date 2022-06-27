@@ -16,6 +16,7 @@ import {
 import { TicketCheckDto } from 'src/dtos/ticket-data.dto';
 import { TicketCheckinDto } from 'src/dtos/ticket-checkin.dto';
 import { TicketService } from './ticket.service';
+import { ethers } from 'ethers';
 
 @ApiTags('ticket')
 @Controller('ticket')
@@ -84,7 +85,12 @@ export class TicketController {
     type: Number,
   })
   @ApiResponse({
-    status: 401,
+    status: 402,
+    description: 'Wallet address is invalid',
+    type: HttpException,
+  })
+  @ApiResponse({
+    status: 403,
     description: 'No ticket info found',
     type: HttpException,
   })
@@ -99,13 +105,16 @@ export class TicketController {
     type: HttpException,
   })
   async getTicket(@Param('walletAddress') walletAddress: string) {
+    const addressValid = ethers.utils.isAddress(walletAddress);
+    if (!addressValid)
+      throw new HttpException('Provided wallet address is invalid', 402);
     const tokenBalance = await this.ticketService.tokenBalanceOf(walletAddress);
     let ticketJsonURI;
     if (tokenBalance > 0) {
       try {
         ticketJsonURI = await this.ticketService.getTicket(walletAddress);
       } catch (error) {
-        throw new HttpException('No ticket info found' + error.message, 401)
+        throw new HttpException('No ticket info found' + error.message, 403)
       }
     } else {
       throw new HttpException('Has not bought ticket yet', 501)

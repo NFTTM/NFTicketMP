@@ -90,12 +90,16 @@ export class TicketService {
   }
 
   async getTicket(walletAddress: string) {
-    let ticketInfo: TicketCheckDto;
+    let ticket: TicketData;
     try {
-      ticketInfo = this.db.getData(`/tickets/${walletAddress}/ticketdata/`);
+      ticket = this.db.getData(`/tickets/${walletAddress}/`);
     } catch (error) {
       throw error;
     }
+    let ticketInfo: TicketCheckDto;
+    ticketInfo = ticket.ticketdata;
+    if (ticket.hasOwnProperty('jsonIpfs'))
+      return ticket.jsonIpfs.IpfsHash;
     const ticketImgPath = `./upload/${walletAddress}.png`;
     const ticketImageIpfsData = await this.ipfsService.saveFileToIpfs(ticketImgPath);
     // TODO: delete ticket image from backend after unpoading to IPFS
