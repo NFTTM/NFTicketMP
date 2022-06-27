@@ -65,20 +65,16 @@ export class TicketController {
     }
     if (!signatureValid) throw new HttpException('Signature does not match with the requested address', 403);
     try {
-      this.ticketService.generateTicketImage(
-        ticketCheckDto.name,
-        ticketCheckDto.id,
-        ticketCheckDto.ticketType
-      )
+      this.ticketService.generateTicketImage(ticketCheckDto);
     } catch (error) {
       throw new HttpException('Event not created.' + error.message, 501);
     }
     return signatureValid;
   }
 
-  @Get('/:passportId')
+  @Get('/:walletAddress')
   @ApiOperation({
-    summary: 'Request a ticket uri from IPFS to the provided passportId',
+    summary: 'Request a ticket uri from IPFS to the provided walletAddress',
     description:
       '1. Checks the balance of this account to ensure it has none-zero ticket. 2. If pass, server uploads to IPFS. 3. Uploads {name, id, ticketType,  signedHash, imageURI} to IPFS and return the jsonURI to frontend.',
   })
@@ -86,6 +82,11 @@ export class TicketController {
     status: 200,
     description: 'Gets ticket metadata jsonURI',
     type: Number,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No ticket info found',
+    type: HttpException,
   })
   @ApiResponse({
     status: 501,
@@ -97,15 +98,15 @@ export class TicketController {
     description: 'The server is not configured correctly',
     type: HttpException,
   })
-  async getTicket(@Param('passportId') passportId: string) {
-    const userAddress = this.ticketService.getAddressById(passportId);
-    if (!userAddress) {
-      throw new HttpException('No ticket found', 401);
-    }
-    const tokenBalance = await this.ticketService.tokenBalanceOf(userAddress);
+  async getTicket(@Param('walletAddress') walletAddress: string) {
+    const tokenBalance = await this.ticketService.tokenBalanceOf(walletAddress);
     let ticketJsonURI;
     if (tokenBalance > 0) {
-      ticketJsonURI = await this.ticketService.getTicket(passportId);
+      try {
+        ticketJsonURI = await this.ticketService.getTicket(walletAddress);
+      } catch (error) {
+        throw new HttpException('No ticket info found' + error.message, 401)
+      }
     } else {
       throw new HttpException('Has not bought ticket yet', 501)
     }

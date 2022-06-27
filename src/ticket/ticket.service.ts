@@ -1,39 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import { JsonDB } from 'node-json-db';
 import { Config } from 'node-json-db/dist/lib/JsonDBConfig';
-import { IPFSHTTPClient } from 'ipfs-http-client/types/src/types';
-import { create } from 'ipfs-http-client';
 import { ethers } from 'ethers';
 import { TicketData } from 'src/schemas/ticket-data.interface'
-import { FileDataDto } from 'src/dtos/file-data.dto';
 import { TicketCheckDto } from 'src/dtos/ticket-data.dto';
 import { ProviderService } from 'src/shared/services/provider/provider.service';
 import { SignerService } from 'src/shared/services/signer/signer.service';
 import * as watermark from 'jimp-watermark';
-import * as fs from 'fs';
 import * as TokenContract from 'src/assets/contracts/TokenContract.json';
 import { TicketCheckinDto } from 'src/dtos/ticket-checkin.dto';
+import { IpfsService } from 'src/shared/services/ipfs/ipfs.service';
 
 const DB_PATH = './db/db.json';
-const WATER_MARK_IMAGE = './upload/watermark.png';
 
 @Injectable()
 export class TicketService {
   db: JsonDB;
-  ipfsClient: IPFSHTTPClient;
   contractPublicInstance: ethers.Contract;
   contractSignedInstance: ethers.Contract;
 
   constructor(
     private providerService: ProviderService,
     private signerService: SignerService,
+    private ipfsService: IpfsService
   ) {
     this.db = new JsonDB(new Config(DB_PATH, true, true, '/'));
-    this.ipfsClient = create({
-      host: 'localhost',
-      port: 5001,
-      protocol: 'http',
-    });
     this.setupContractInstances();
   }
 
@@ -60,30 +51,8 @@ export class TicketService {
     return this.db.getData('/');
   }
 
-  storeTicketToJsonDb(ticketId: string, ticketCheckDto: TicketCheckDto) {
-    const obj = new TicketData(ticketCheckDto);
-    this.db.push(`/tickets/${ticketId}/`, obj);
-  }
-
-  pushFile(ticketId: string, fileData: FileDataDto) {
-    let TicketData: any;
-    try {
-      TicketData = this.db.getData(`/tickets/${ticketId}/ticketdata/`);
-    } catch (error) {
-      return { error };
-    }
-    if (!TicketData) return false;
-
-    this.db.push(`/tickets/${ticketId}/file`, fileData);
-    return this.getTicketInfo(ticketId);
-  }
-
   getTickets() {
     return this.db.getData(`/tickets/`);
-  }
-
-  getTicketInfo(ticketId: string) {
-    return this.db.getData(`/tickets/${ticketId}/ticketdata/`);
   }
 
   verifyBuySignature(ticketCheckDto: TicketCheckDto) {
@@ -92,7 +61,8 @@ export class TicketService {
     const signerAddress = ethers.utils.verifyMessage(signatureMessage, ticketCheckDto.buySignature);
     const signatureValid = signerAddress == ticketCheckDto.address;
     if (signatureValid) {
-      this.storeTicketToJsonDb(ticketCheckDto.id, ticketCheckDto);
+      const obj = new TicketData(ticketCheckDto);
+      this.db.push(`/tickets/${ticketCheckDto.address}/`, obj);
     }
     return signatureValid;
   }
@@ -103,16 +73,7 @@ export class TicketService {
     return balance;
   }
 
-  getAddressById(id: string) {
-    let userAddress;
-    try {
-      userAddress = this.db.getData(`/tickets/${id}/ticketdata/address`);
-    } catch (error) {
-      return false;
-    }
-    return userAddress;
-  }
-  async generateTicketImage(name: string, id: string, ticketType: string) {
+  async generateTicketImage(ticketCheckDto: TicketCheckDto) {
     let storageName;
     try {
       storageName = this.db.getData('/event/file/storageName/')
@@ -120,29 +81,35 @@ export class TicketService {
       throw error;
     }
     var options = {
-      'text': `${name} ${id} ${ticketType}`,
+      'text': `${ticketCheckDto.name} ${ticketCheckDto.id} ${ticketCheckDto.ticketType}`,
       'textSize': 6, //Should be between 1-8
-      'dstPath': WATER_MARK_IMAGE
+      'dstPath': `./upload/${ticketCheckDto.address}.png`
     };
     watermark.addTextWatermark(`./upload/${storageName}`, options);
     return true;
   }
 
-  async getTicket(ticketId: string) {
-    const ticketInfo: TicketCheckDto = this.getTicketInfo(ticketId);
-    const fileBytes = fs.readFileSync(WATER_MARK_IMAGE);
-    const ticketImageIpfsData = await this.ipfsClient.add(fileBytes);
-    this.db.push(`/tickets/${ticketId}/imageIpfs`, ticketImageIpfsData);
+  async getTicket(walletAddress: string) {
+    let ticketInfo: TicketCheckDto;
+    try {
+      ticketInfo = this.db.getData(`/tickets/${walletAddress}/ticketdata/`);
+    } catch (error) {
+      throw error;
+    }
+    const ticketImgPath = `./upload/${walletAddress}.png`;
+    const ticketImageIpfsData = await this.ipfsService.saveFileToIpfs(ticketImgPath);
+    // TODO: delete ticket image from backend after unpoading to IPFS
+    this.db.push(`/tickets/${walletAddress}/imageIpfs`, ticketImageIpfsData);
     const ticketJsonObj = {
       name: ticketInfo.name,
       id: ticketInfo.id,
       ticketType: ticketInfo.ticketType,
       signedHash: ticketInfo.buySignature,
-      imageUri: ticketImageIpfsData.path
+      imageUri: ticketImageIpfsData.ipfsHash
     };
-    const ticketJsonticketImageIpfsData = await this.ipfsClient.add(JSON.stringify(ticketJsonObj))
-    const ticketJsonURI = ticketJsonticketImageIpfsData.path;
-    this.db.push(`/tickets/${ticketId}/jsonIpfs`, ticketJsonticketImageIpfsData);
+    const ticketJsonIpfsData = await this.ipfsService.saveJsonToIpfs(ticketJsonObj);
+    const ticketJsonURI = ticketJsonIpfsData.IpfsHash;
+    this.db.push(`/tickets/${walletAddress}/jsonIpfs`, ticketJsonIpfsData);
     return ticketJsonURI;
   }
 
@@ -155,7 +122,10 @@ export class TicketService {
     const signerAddress = ethers.utils.verifyMessage(signatureMessage, ticketCheckinDto.signedHashForCheckin);
     const signatureValid = signerAddress == ticketCheckinDto.address;
     if (signatureValid) {
-      this.db.push(`/tickets/${ticketCheckinDto.address}/`, ticketCheckinDto);
+      this.db.push(
+        `/tickets/${ticketCheckinDto.address}/ticketdata/checkinSignature/`,
+        ticketCheckinDto.signedHashForCheckin
+      );
     }
     return signatureValid;
   }

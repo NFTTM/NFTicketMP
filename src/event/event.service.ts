@@ -1,12 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
 import { JsonDB } from 'node-json-db';
 import { Config } from 'node-json-db/dist/lib/JsonDBConfig';
 import { FileDataDto } from 'src/dtos/file-data.dto';
 import { EventdataDto } from 'src/dtos/event-data.dto'
-import { create } from 'ipfs-http-client';
-import { IPFSHTTPClient } from 'ipfs-http-client/types/src/types';
-import { EventData } from 'src/schemas/event-data.interface'
+import { EventData } from 'src/schemas/event-data.interface';
+import { IpfsService } from 'src/shared/services/ipfs/ipfs.service';
 
 const DB_PATH = './db/db.json';
 
@@ -14,15 +12,11 @@ const DB_PATH = './db/db.json';
 export class EventService {
   db: JsonDB;
   lastEventId: number;
-  ipfsClient: IPFSHTTPClient;
 
-  constructor() {
+  constructor(
+    private ipfsService: IpfsService
+  ) {
     this.db = new JsonDB(new Config(DB_PATH, true, true, '/'));
-    this.ipfsClient = create({
-      host: 'localhost',
-      port: 5001,
-      protocol: 'http',
-    });
     const data = this.db.getData('/');
     this.lastEventId =
       data.event && Object.keys(data.event).length > 0
@@ -64,9 +58,8 @@ export class EventService {
   async saveToIpfs() {
     const eventData: EventData = this.getEvent();
     const fileLocation = `./upload/${eventData.file.storageName}`;
-    const fileBytes = fs.readFileSync(fileLocation);
-    const eventIpfsData = await this.ipfsClient.add(fileBytes);
-    this.db.push(`/event/ipfs`, eventIpfsData);
-    return eventIpfsData.path;
+    const ipfsData = await this.ipfsService.saveFileToIpfs(fileLocation);
+    this.db.push(`/event/ipfs/`, ipfsData);
+    return ipfsData.IpfsHash;
   }
 }
