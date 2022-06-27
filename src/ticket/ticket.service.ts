@@ -6,7 +6,7 @@ import { create } from 'ipfs-http-client';
 import { ethers } from 'ethers';
 import { TicketData } from 'src/schemas/ticket-data.interface'
 import { FileDataDto } from 'src/dtos/file-data.dto';
-import { TicketBuyCheckDto } from 'src/dtos/ticket-buy-check.dto';
+import { TicketCheckDto } from 'src/dtos/ticket-data.dto';
 import { ProviderService } from 'src/shared/services/provider/provider.service';
 import { SignerService } from 'src/shared/services/signer/signer.service';
 import * as watermark from 'jimp-watermark';
@@ -60,8 +60,8 @@ export class TicketService {
     return this.db.getData('/');
   }
 
-  storeTicketToJsonDb(ticketId: string, ticketBuyCheckDto: TicketBuyCheckDto) {
-    const obj = new TicketData(ticketBuyCheckDto);
+  storeTicketToJsonDb(ticketId: string, ticketCheckDto: TicketCheckDto) {
+    const obj = new TicketData(ticketCheckDto);
     this.db.push(`/tickets/${ticketId}/`, obj);
   }
 
@@ -86,13 +86,13 @@ export class TicketService {
     return this.db.getData(`/tickets/${ticketId}/ticketdata/`);
   }
 
-  verifyBuySignature(ticketBuyCheckDto: TicketBuyCheckDto) {
-    const signatureObject = { name: ticketBuyCheckDto.name, id: ticketBuyCheckDto.id, ticketType: ticketBuyCheckDto.ticketType };
+  verifyBuySignature(ticketCheckDto: TicketCheckDto) {
+    const signatureObject = { name: ticketCheckDto.name, id: ticketCheckDto.id, ticketType: ticketCheckDto.ticketType };
     const signatureMessage = JSON.stringify(signatureObject);
-    const signerAddress = ethers.utils.verifyMessage(signatureMessage, ticketBuyCheckDto.signature);
-    const signatureValid = signerAddress == ticketBuyCheckDto.address;
+    const signerAddress = ethers.utils.verifyMessage(signatureMessage, ticketCheckDto.buySignature);
+    const signatureValid = signerAddress == ticketCheckDto.address;
     if (signatureValid) {
-      this.storeTicketToJsonDb(ticketBuyCheckDto.id, ticketBuyCheckDto);
+      this.storeTicketToJsonDb(ticketCheckDto.id, ticketCheckDto);
     }
     return signatureValid;
   }
@@ -129,7 +129,7 @@ export class TicketService {
   }
 
   async getTicket(ticketId: string) {
-    const ticketInfo: TicketBuyCheckDto = this.getTicketInfo(ticketId);
+    const ticketInfo: TicketCheckDto = this.getTicketInfo(ticketId);
     const fileBytes = fs.readFileSync(WATER_MARK_IMAGE);
     const ticketImageIpfsData = await this.ipfsClient.add(fileBytes);
     this.db.push(`/tickets/${ticketId}/imageIpfs`, ticketImageIpfsData);
@@ -137,7 +137,7 @@ export class TicketService {
       name: ticketInfo.name,
       id: ticketInfo.id,
       ticketType: ticketInfo.ticketType,
-      signedHash: ticketInfo.signature,
+      signedHash: ticketInfo.buySignature,
       imageUri: ticketImageIpfsData.path
     };
     const ticketJsonticketImageIpfsData = await this.ipfsClient.add(JSON.stringify(ticketJsonObj))
@@ -154,8 +154,12 @@ export class TicketService {
     const signatureMessage = JSON.stringify(signatureObject);
     const signerAddress = ethers.utils.verifyMessage(signatureMessage, ticketCheckinDto.signedHashForCheckin);
     const signatureValid = signerAddress == ticketCheckinDto.address;
+    if (signatureValid) {
+      this.db.push(`/tickets/${ticketCheckinDto.address}/`, ticketCheckinDto);
+    }
     return signatureValid;
   }
+
   async checkin(ticketCheckinDto: TicketCheckinDto) {
     // This function didn't know which ticket to checkin if an address holds multiple tickets.
     // Now backend didn't check if this addres holds a ticket or ticket expired.
