@@ -3,7 +3,7 @@ import "dotenv/config";
 import * as TokenContract from '../src/assets/contracts/TokenContract.json';
 
 async function main() {
-  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY);
+  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY_HAS_TOKEN);
   console.log(`Using address ${wallet.address}`);
   const provider = new ethers.providers.JsonRpcProvider(process.env.BSC_TESTNET_RPC);
   const signer = wallet.connect(provider);
@@ -24,39 +24,21 @@ async function main() {
     signer,
   );
 
+  // const vip1TicketPrice = ethers.utils.parseEther("0.001");
+  // const vip1Name = ethers.utils.formatBytes32String('VIP1');
+  // await contractSignedInstance.buyTicket(vip1Name, { value: vip1TicketPrice });
+
   const addressHasToken = process.env.ADDRESS_HAS_TOKEN;
   const tokenBalance = await contractSignedInstance.balanceOf(addressHasToken);
   console.log(`Token balance of ${addressHasToken} is ${tokenBalance}`);
 
-  const Message = { name: "alice", id: "A1234", ticketType: "VIP1" };
+  const Message = { name: "Alice", id: "4", ticketType: "VIP1" };
   const signatureMessage = JSON.stringify(Message);
   const signedHash = await wallet.signMessage(signatureMessage);
   console.log(signedHash);
 
-  // buy a ticket to another address
-  const guestWallet = new ethers.Wallet(process.env.PRIVATE_KEY_HAS_TOKEN);
-  const guestProvider = new ethers.providers.JsonRpcProvider(process.env.BSC_TESTNET_RPC);
-  const guestSigner = guestWallet.connect(guestProvider);
-  const nftContract = new ethers.Contract(
-    process.env.TOKEN_CONTRACT_ADDRESS,
-    TokenContract.abi,
-    guestSigner
-  );
-
-  // const vip2TicketPrice = ethers.utils.parseEther("0.001");
-  // const vip2Name = ethers.utils.formatBytes32String('VIP1');
-  // await nftContract.buyTicket(vip2Name, { value: vip2TicketPrice });
-
-  // console.log(`Guest ${guestWallet.address} has bought a VIP1 Ticket`);
-  const guestTokenBalance = await contractSignedInstance.balanceOf(guestWallet.address);
-  console.log(`Token balance of ${guestWallet.address} is ${guestTokenBalance}`);
-
-  // sign message
-  const Message2 = { name: "Charlie", id: "5", ticketType: "VIP1" };
-  const signatureMessage2 = JSON.stringify(Message2);
-  const signedHash2 = await guestWallet.signMessage(signatureMessage2);
-  console.log(signedHash2);
-
+  const checkedIn = await contractSignedInstance.checkedIn(addressHasToken);
+  console.log(`Address ${addressHasToken} checked in: ${checkedIn}`);
 }
 
 main().catch((error) => {
