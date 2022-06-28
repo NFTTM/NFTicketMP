@@ -109,17 +109,17 @@ export class TicketController {
     if (!addressValid)
       throw new HttpException('Provided wallet address is invalid', 402);
     const tokenBalance = await this.ticketService.tokenBalanceOf(walletAddress);
-    let ticketJsonURI;
+    let ticketJsonObj;
     if (tokenBalance > 0) {
       try {
-        ticketJsonURI = await this.ticketService.getTicket(walletAddress);
+        ticketJsonObj = await this.ticketService.getTicket(walletAddress);
       } catch (error) {
         throw new HttpException('No ticket info found. ' + error.message, 403)
       }
     } else {
       throw new HttpException('Has not bought ticket yet', 501)
     }
-    return ticketJsonURI;
+    return ticketJsonObj;
   }
 
   @Get('')

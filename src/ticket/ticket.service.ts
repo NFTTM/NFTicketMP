@@ -96,15 +96,28 @@ export class TicketService {
     } catch (error) {
       throw error;
     }
+    let ticketJsonObj;
     let ticketInfo: TicketCheckDto;
+    let ticketJsonURI: string;
     ticketInfo = ticket.ticketdata;
-    if (ticket.jsonIpfs)
-      return ticket.jsonIpfs.IpfsHash;
+    if (ticket.jsonIpfs && ticket.imageIpfs) {
+      ticketJsonObj = {
+        name: ticketInfo.name,
+        id: ticketInfo.id,
+        ticketType: ticketInfo.ticketType,
+        signedHash: ticketInfo.buySignature,
+        imageUri: ticket.imageIpfs.IpfsHash
+      };
+
+      ticketJsonURI = ticket.jsonIpfs.IpfsHash;
+      return { ticketJsonURI, ticketJsonObj };
+    }
+
     const ticketImgPath = `./upload/${walletAddress}.png`;
     const ticketImageIpfsData = await this.ipfsService.saveFileToIpfs(ticketImgPath);
     // TODO: delete ticket image from backend after unpoading to IPFS
     this.db.push(`/tickets/${walletAddress}/imageIpfs`, ticketImageIpfsData);
-    const ticketJsonObj = {
+    ticketJsonObj = {
       name: ticketInfo.name,
       id: ticketInfo.id,
       ticketType: ticketInfo.ticketType,
@@ -112,9 +125,9 @@ export class TicketService {
       imageUri: ticketImageIpfsData.IpfsHash
     };
     const ticketJsonIpfsData = await this.ipfsService.saveJsonToIpfs(ticketJsonObj);
-    const ticketJsonURI = ticketJsonIpfsData.IpfsHash;
+    ticketJsonURI = ticketJsonIpfsData.IpfsHash;
     this.db.push(`/tickets/${walletAddress}/jsonIpfs`, ticketJsonIpfsData);
-    return ticketJsonURI;
+    return { ticketJsonURI, ticketJsonObj };
   }
 
   async verifyCheckinSignature(ticketCheckinDto: TicketCheckinDto) {
