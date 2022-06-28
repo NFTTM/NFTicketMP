@@ -68,7 +68,7 @@ export class TicketController {
     try {
       this.ticketService.generateTicketImage(ticketCheckDto);
     } catch (error) {
-      throw new HttpException('Event not created.' + error.message, 501);
+      throw new HttpException('Event not created. ' + error.message, 501);
     }
     return signatureValid;
   }
@@ -114,7 +114,7 @@ export class TicketController {
       try {
         ticketJsonURI = await this.ticketService.getTicket(walletAddress);
       } catch (error) {
-        throw new HttpException('No ticket info found' + error.message, 403)
+        throw new HttpException('No ticket info found. ' + error.message, 403)
       }
     } else {
       throw new HttpException('Has not bought ticket yet', 501)

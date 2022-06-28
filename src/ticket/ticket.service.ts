@@ -98,7 +98,7 @@ export class TicketService {
     }
     let ticketInfo: TicketCheckDto;
     ticketInfo = ticket.ticketdata;
-    if (ticket.hasOwnProperty('jsonIpfs'))
+    if (ticket.jsonIpfs)
       return ticket.jsonIpfs.IpfsHash;
     const ticketImgPath = `./upload/${walletAddress}.png`;
     const ticketImageIpfsData = await this.ipfsService.saveFileToIpfs(ticketImgPath);
@@ -109,7 +109,7 @@ export class TicketService {
       id: ticketInfo.id,
       ticketType: ticketInfo.ticketType,
       signedHash: ticketInfo.buySignature,
-      imageUri: ticketImageIpfsData.ipfsHash
+      imageUri: ticketImageIpfsData.IpfsHash
     };
     const ticketJsonIpfsData = await this.ipfsService.saveJsonToIpfs(ticketJsonObj);
     const ticketJsonURI = ticketJsonIpfsData.IpfsHash;
