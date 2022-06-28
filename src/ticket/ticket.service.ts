@@ -10,6 +10,7 @@ import * as watermark from 'jimp-watermark';
 import * as TokenContract from 'src/assets/contracts/TokenContract.json';
 import { TicketCheckinDto } from 'src/dtos/ticket-checkin.dto';
 import { IpfsService } from 'src/shared/services/ipfs/ipfs.service';
+import * as fs from 'fs';
 
 const DB_PATH = './db/db.json';
 
@@ -80,10 +81,11 @@ export class TicketService {
     } catch (error) {
       throw error;
     }
+    const ticketId = await this.contractSignedInstance.buyerToTicket(ticketCheckDto.address);
     var options = {
       'text': `${ticketCheckDto.name} ${ticketCheckDto.id} ${ticketCheckDto.ticketType}`,
       'textSize': 6, //Should be between 1-8
-      'dstPath': `./upload/${ticketCheckDto.address}.png`
+      'dstPath': `./upload/${ticketId}.png`
     };
     watermark.addTextWatermark(`./upload/${storageName}`, options);
     return true;
@@ -112,8 +114,8 @@ export class TicketService {
       ticketJsonURI = ticket.jsonIpfs.IpfsHash;
       return { ticketJsonURI, ticketJsonObj };
     }
-
-    const ticketImgPath = `./upload/${walletAddress}.png`;
+    const ticketId = await this.contractSignedInstance.buyerToTicket(walletAddress);
+    const ticketImgPath = `./upload/${ticketId}.png`;
     const ticketImageIpfsData = await this.ipfsService.saveFileToIpfs(ticketImgPath);
     // TODO: delete ticket image from backend after unpoading to IPFS
     this.db.push(`/tickets/${walletAddress}/imageIpfs`, ticketImageIpfsData);
@@ -124,6 +126,11 @@ export class TicketService {
       signedHash: ticketInfo.buySignature,
       imageUri: ticketImageIpfsData.IpfsHash
     };
+    fs.writeFile(`./upload/${ticketId}.json`, JSON.stringify(ticketJsonObj, null, 4), function(err) {
+      if (err) {
+          throw err;
+      }
+  });
     const ticketJsonIpfsData = await this.ipfsService.saveJsonToIpfs(ticketJsonObj);
     ticketJsonURI = ticketJsonIpfsData.IpfsHash;
     this.db.push(`/tickets/${walletAddress}/jsonIpfs`, ticketJsonIpfsData);
