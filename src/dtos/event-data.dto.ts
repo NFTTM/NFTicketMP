@@ -13,31 +13,31 @@ export class EventdataDto {
   @ApiProperty({
     required: true,
     description: 'Place of the event',
-    example: 'Rogers Place, 112 Street, 88 Ave',
+    example: 'State Farm Stadium, 112 Street, 88 Ave, Vancouver, CA',
   })
   place: string;
   @ApiProperty({
     required: true,
-    description: 'Start timestamp of this event',
+    description: 'Start timestamp in unix time of this event',
     example: '1655917396',
   })
   startAt: number;
   @ApiProperty({
     required: true,
-    description: 'End timestamp of this event',
+    description: 'End timestamp in unix time of this event',
     example: '1655927412',
   })
   endAt: number;
   @ApiProperty({
     required: true,
     description: 'Total seats or tickets of this event',
-    examples: [5000, 300, 1000],
+    example: 3000,
   })
   totalSeats: number;
   @ApiProperty({
     required: false,
     description: 'Organizer of this event',
-    example: 'Event organizer company',
+    example: 'Event Organizer company',
   })
   organizer?: string;
   @ApiProperty({

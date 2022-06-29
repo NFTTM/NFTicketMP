@@ -59,6 +59,9 @@ export class IpfsService {
   async saveFolderToIpfs(src: string) {
     try {
       const { dirs, files } = await rfs.read(src);
+      if (files.length < 2)
+        setTimeout(() => {console.log("Waiting 2 seconds for ticket image beeing created")}, 2000);
+      console.log(files);
       let data = new FormData();
       for (const file of files) {
         data.append(`file`, fs.createReadStream(file), {

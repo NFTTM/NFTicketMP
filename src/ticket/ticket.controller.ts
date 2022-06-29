@@ -65,11 +65,6 @@ export class TicketController {
       throw new HttpException("Invalid signature: " + error.message, 500);
     }
     if (!signatureValid) throw new HttpException('Signature does not match with the requested address', 403);
-    try {
-      this.ticketService.generateTicketImage(ticketCheckDto);
-    } catch (error) {
-      throw new HttpException('Event not created. ' + error.message, 501);
-    }
     return signatureValid;
   }
 

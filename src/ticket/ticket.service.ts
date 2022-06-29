@@ -10,7 +10,7 @@ import * as watermark from 'jimp-watermark';
 import * as TokenContract from 'src/assets/contracts/TokenContract.json';
 import { TicketCheckinDto } from 'src/dtos/ticket-checkin.dto';
 import { IpfsService } from 'src/shared/services/ipfs/ipfs.service';
-import * as fs from 'fs';
+import { promises as fs } from 'fs';
 
 const DB_PATH = './db/db.json';
 
@@ -74,21 +74,20 @@ export class TicketService {
     return balance;
   }
 
-  async generateTicketImage(ticketCheckDto: TicketCheckDto) {
+  async generateTicketImage(name: string, id: string, ticketType: string, ticketId: number) {
     let storageName;
     try {
       storageName = this.db.getData('/event/file/storageName/')
     } catch (error) {
       throw error;
     }
-    const ticketId = await this.contractSignedInstance.buyerToTicket(ticketCheckDto.address);
     var options = {
-      'text': `${ticketCheckDto.name} ${ticketCheckDto.id} ${ticketCheckDto.ticketType}`,
+      'text': `${name} ${id} ${ticketType}`,
       'textSize': 6, //Should be between 1-8
       'dstPath': `./upload/${ticketId}/ticket.png`
     };
-    watermark.addTextWatermark(`./upload/${storageName}`, options);
-    return true;
+    const watermarkedImg = await watermark.addTextWatermark(`./upload/${storageName}`, options);
+    return watermarkedImg.destinationPath;
   }
 
   async getTicket(walletAddress: string) {
@@ -120,12 +119,17 @@ export class TicketService {
       ticketType: ticketInfo.ticketType,
       signedHash: ticketInfo.buySignature,
     };
-    fs.writeFile(`./upload/${ticketId}/ticket.json`, JSON.stringify(ticketIpfsObj, null, 4), function(err) {
-      if (err) {
-          throw err;
-      }
-  });
     const src = `./upload/${ticketId}`;
+    await fs.mkdir(src);
+
+    const ticketImagePath = await this.generateTicketImage(
+      ticketInfo.name,
+      ticketInfo.id,
+      ticketInfo.ticketType,
+      ticketId
+    );
+    console.log(ticketImagePath);
+    await fs.writeFile(`./upload/${ticketId}/ticket.json`, JSON.stringify(ticketIpfsObj, null, 4));
     const ticketJsonIpfsData = await this.ipfsService.saveFolderToIpfs(src);
     ticketIpfsURI = ticketJsonIpfsData.IpfsHash;
     this.db.push(`/tickets/${walletAddress}/ticketIpfs`, ticketJsonIpfsData);

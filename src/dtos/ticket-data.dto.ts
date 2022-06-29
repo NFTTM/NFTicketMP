@@ -37,10 +37,10 @@ export class TicketCheckDto {
     example: '0x3603b348361238aa5adf8a3c16622caa9cb4962c2583bb484d29253c6e8d594f72029f8765c76eac95dbd6d476af871c37aef119ccf1ac094bfd1e49c4de719c1c',
   })
   buySignature: string;
-  @ApiProperty({
-    required: false,
-    description: 'Signature payload for buying ticket',
-    example: '',
-  })
-  checkinSignature: string;
+  // @ApiProperty({
+  //   required: false,
+  //   description: 'Signature payload for buying ticket',
+  //   example: '',
+  // })
+  // checkinSignature: string;
 }
