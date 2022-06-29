@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import * as FormData from 'form-data';
 import * as fs from 'fs';
-
+import * as rfs from 'recursive-fs';
+import * as basePathConverter from 'base-path-converter';
 @Injectable()
 export class IpfsService {
   pinataFileURL: string;
@@ -53,5 +54,32 @@ export class IpfsService {
 
     const res = await axios(config);
     return res.data;
+  }
+
+  async saveFolderToIpfs(src: string) {
+    try {
+      const { dirs, files } = await rfs.read(src);
+      let data = new FormData();
+      for (const file of files) {
+        data.append(`file`, fs.createReadStream(file), {
+          filepath: basePathConverter(src, file),
+        });
+      }
+  
+      var config = {
+        method: 'post',
+        url: this.pinataFileURL,
+        headers: {
+          'Authorization': `Bearer ${this.pinataJWT}`,
+          ...data.getHeaders()
+        },
+        data: data
+    };
+  
+      const res = await axios(config);
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
   }
 }

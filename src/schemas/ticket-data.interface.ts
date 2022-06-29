@@ -4,7 +4,6 @@ import { TicketCheckDto } from 'src/dtos/ticket-data.dto';
 export class TicketData {
   constructor(
     public ticketdata?: TicketCheckDto,
-    public imageIpfs?: IpfsDataDto,
-    public jsonIpfs?: IpfsDataDto,
+    public ticketIpfs?: IpfsDataDto,
   ) { }
 }

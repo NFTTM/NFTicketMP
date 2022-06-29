@@ -85,7 +85,7 @@ export class TicketService {
     var options = {
       'text': `${ticketCheckDto.name} ${ticketCheckDto.id} ${ticketCheckDto.ticketType}`,
       'textSize': 6, //Should be between 1-8
-      'dstPath': `./upload/${ticketId}.png`
+      'dstPath': `./upload/${ticketId}/${ticketId}.png`
     };
     watermark.addTextWatermark(`./upload/${storageName}`, options);
     return true;
@@ -98,43 +98,38 @@ export class TicketService {
     } catch (error) {
       throw error;
     }
-    let ticketJsonObj;
+    let ticketIpfsObj;
     let ticketInfo: TicketCheckDto;
-    let ticketJsonURI: string;
+    let ticketIpfsURI: string;
     ticketInfo = ticket.ticketdata;
-    if (ticket.jsonIpfs && ticket.imageIpfs) {
-      ticketJsonObj = {
+    if (ticket.ticketIpfs) {
+      ticketIpfsObj = {
         name: ticketInfo.name,
         id: ticketInfo.id,
         ticketType: ticketInfo.ticketType,
         signedHash: ticketInfo.buySignature,
-        imageUri: ticket.imageIpfs.IpfsHash
       };
 
-      ticketJsonURI = ticket.jsonIpfs.IpfsHash;
-      return { ticketJsonURI, ticketJsonObj };
+      ticketIpfsURI = ticket.ticketIpfs.IpfsHash;
+      return { ticketIpfsURI, ticketIpfsObj };
     }
     const ticketId = await this.contractSignedInstance.buyerToTicket(walletAddress);
-    const ticketImgPath = `./upload/${ticketId}.png`;
-    const ticketImageIpfsData = await this.ipfsService.saveFileToIpfs(ticketImgPath);
-    // TODO: delete ticket image from backend after unpoading to IPFS
-    this.db.push(`/tickets/${walletAddress}/imageIpfs`, ticketImageIpfsData);
-    ticketJsonObj = {
+    ticketIpfsObj = {
       name: ticketInfo.name,
       id: ticketInfo.id,
       ticketType: ticketInfo.ticketType,
       signedHash: ticketInfo.buySignature,
-      imageUri: ticketImageIpfsData.IpfsHash
     };
-    fs.writeFile(`./upload/${ticketId}.json`, JSON.stringify(ticketJsonObj, null, 4), function(err) {
+    fs.writeFile(`./upload/${ticketId}/${ticketId}.json`, JSON.stringify(ticketIpfsObj, null, 4), function(err) {
       if (err) {
           throw err;
       }
   });
-    const ticketJsonIpfsData = await this.ipfsService.saveJsonToIpfs(ticketJsonObj);
-    ticketJsonURI = ticketJsonIpfsData.IpfsHash;
-    this.db.push(`/tickets/${walletAddress}/jsonIpfs`, ticketJsonIpfsData);
-    return { ticketJsonURI, ticketJsonObj };
+    const src = `./upload/${ticketId}`;
+    const ticketJsonIpfsData = await this.ipfsService.saveFolderToIpfs(src);
+    ticketIpfsURI = ticketJsonIpfsData.IpfsHash;
+    this.db.push(`/tickets/${walletAddress}/ticketIpfs`, ticketJsonIpfsData);
+    return { ticketIpfsURI, ticketIpfsObj };
   }
 
   async verifyCheckinSignature(ticketCheckinDto: TicketCheckinDto) {

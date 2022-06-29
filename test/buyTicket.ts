@@ -24,8 +24,8 @@ async function main() {
     signer,
   );
 
-  const vip1TicketPrice = ethers.utils.parseEther("0.002");
-  const vip1Name = ethers.utils.formatBytes32String('VIP2');
+  const vip1TicketPrice = ethers.utils.parseEther("0.001");
+  const vip1Name = ethers.utils.formatBytes32String('VIP1');
   const mintTx = await contractSignedInstance.buyTicket(vip1Name, { value: vip1TicketPrice });
   console.log("Awaiting for the buy ticket transaction to be confirmed.")
   await mintTx.wait();
@@ -35,10 +35,10 @@ async function main() {
 
   console.log(`Token balance of ${addressHasToken} is ${tokenBalance}`);
 
-  const Message = { name: "Gina", id: "G4967", ticketType: "VIP1" };
+  const Message = { name: "Mona", id: "M1978", ticketType: "VIP1" };
   const signatureMessage = JSON.stringify(Message);
   const signedHash = await wallet.signMessage(signatureMessage);
-  console.log(signedHash);
+  console.log({Message, signedHash});
 
   const checkedIn = await contractSignedInstance.checkedIn(addressHasToken);
   console.log(`Address ${addressHasToken} checked in: ${checkedIn}`);
