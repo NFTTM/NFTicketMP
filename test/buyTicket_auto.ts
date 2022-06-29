@@ -3,8 +3,7 @@ import "dotenv/config";
 import * as TokenContract from '../src/assets/contracts/TokenContract.json';
 
 async function main() {
-  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY_HAS_TOKEN);
-  console.log(`Using address ${wallet.address}`);
+  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY_HAS_BNB);
   const provider = new ethers.providers.JsonRpcProvider(process.env.BSC_TESTNET_RPC);
   const signer = wallet.connect(provider);
 
@@ -15,13 +14,36 @@ async function main() {
   if (balance < 0.01) {
     throw new Error("Not enough ether");
   }
+
+  const walletBuyer = ethers.Wallet.createRandom();
+  console.log(`Created random wallet: Address ${walletBuyer.address}, priKey: ${walletBuyer.privateKey}`);
+  const providerBuyer = new ethers.providers.JsonRpcProvider(process.env.BSC_TESTNET_RPC);
+  const signerBuyer = wallet.connect(providerBuyer);
+
+  console.log(`Transfer money from ${wallet.address} to ${walletBuyer.address}`);
+  const transferValue = ethers.utils.parseEther("0.015");
+  let transferTx = {
+    to: walletBuyer.address,
+    // Convert currency unit from ether to wei
+    value: transferValue
+  }
+
+  const tx = await signerBuyer.sendTransaction(transferTx);
+  console.log('Awaiting transfer confirmed...');
+  await tx.wait();
+  console.log(`Transfer tx ${tx.hash} confirmed!`);
+
+  const balanceBNBuyer = await signerBuyer.getBalance();
+  const balanceBuyer = Number(ethers.utils.formatEther(balanceBNBuyer));
+  console.log(`Balance of the buyer wallet is: ${balanceBuyer}`);
+
   console.log("Connecting to Token contract");
 
   const contractAddress = process.env.TOKEN_CONTRACT_ADDRESS;
   const contractSignedInstance: ethers.Contract = new ethers.Contract(
     contractAddress,
     TokenContract.abi,
-    signer,
+    signerBuyer,
   );
 
   const vip1TicketPrice = ethers.utils.parseEther("0.001");
@@ -30,12 +52,12 @@ async function main() {
   console.log("Awaiting for the buy ticket transaction to be confirmed.")
   await mintTx.wait();
 
-  const addressHasToken = process.env.ADDRESS_HAS_TOKEN;
+  const addressHasToken = walletBuyer.address;
   const tokenBalance = await contractSignedInstance.balanceOf(addressHasToken);
 
   console.log(`Token balance of ${addressHasToken} is ${tokenBalance}`);
 
-  const Message = { name: "Xin", id: "Xin1963", ticketType: "VIP1" };
+  const Message = { name: "Xin", id: "X1983", ticketType: "VIP1" };
   const signatureMessage = JSON.stringify(Message);
   const signedHash = await wallet.signMessage(signatureMessage);
   console.log({Message, signedHash});
