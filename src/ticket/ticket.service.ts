@@ -85,7 +85,7 @@ export class TicketService {
     var options = {
       'text': `${ticketCheckDto.name} ${ticketCheckDto.id} ${ticketCheckDto.ticketType}`,
       'textSize': 6, //Should be between 1-8
-      'dstPath': `./upload/${ticketId}/${ticketId}.png`
+      'dstPath': `./upload/${ticketId}/ticket.png`
     };
     watermark.addTextWatermark(`./upload/${storageName}`, options);
     return true;
@@ -120,7 +120,7 @@ export class TicketService {
       ticketType: ticketInfo.ticketType,
       signedHash: ticketInfo.buySignature,
     };
-    fs.writeFile(`./upload/${ticketId}/${ticketInfo.name}.json`, JSON.stringify(ticketIpfsObj, null, 4), function(err) {
+    fs.writeFile(`./upload/${ticketId}/ticket.json`, JSON.stringify(ticketIpfsObj, null, 4), function(err) {
       if (err) {
           throw err;
       }
