@@ -120,7 +120,7 @@ export class TicketService {
       ticketType: ticketInfo.ticketType,
       signedHash: ticketInfo.buySignature,
     };
-    fs.writeFile(`./upload/${ticketId}/${ticketId}.json`, JSON.stringify(ticketIpfsObj, null, 4), function(err) {
+    fs.writeFile(`./upload/${ticketId}/${ticketInfo.name}.json`, JSON.stringify(ticketIpfsObj, null, 4), function(err) {
       if (err) {
           throw err;
       }
